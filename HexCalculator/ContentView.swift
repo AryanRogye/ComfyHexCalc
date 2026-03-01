@@ -10,7 +10,7 @@ import AppKit
 
 struct ContentView: View {
     // MARK: - Enums & Types
-    
+
     enum BitWidth: Int, CaseIterable, Identifiable {
         case b8 = 8, b16 = 16, b32 = 32, b64 = 64
         var id: Int { rawValue }
@@ -27,7 +27,7 @@ struct ContentView: View {
 
         var id: String { rawValue }
         var isUnary: Bool { self == .notA || self == .negA }
-        
+
         var symbol: String {
             switch self {
             case .add: return "+"
@@ -67,7 +67,7 @@ struct ContentView: View {
     }
 
     // MARK: - State
-    
+
     @State private var inputA = ""
     @State private var inputB = ""
     @State private var selectedBitWidth: BitWidth = .b32
@@ -84,33 +84,44 @@ struct ContentView: View {
     @State private var keyEventMonitor: Any?
 
     @State private var history: [HistoryEntry] = []
-    @State private var showHistory = false
-    
+    @State private var showSidebar = false
+
     private let historyKey = "HexCalculator.History"
     private let alwaysOnTopKey = "HexCalculator.AlwaysOnTop"
 
+    // Layout Constants
+    private let calculatorWidth: CGFloat = 420
+    private let sidebarWidth: CGFloat = 280
+
     // MARK: - Body
-    
+
     var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                displaySection
-                
-                Divider().background(Color.white.opacity(0.1))
-                
-                controlsHeader
-                
-                keypadSection
+        HStack(spacing: 0) {
+            if showSidebar {
+                historySidebar
+                    .frame(width: sidebarWidth)
+                    .transition(.move(edge: .leading))
             }
-            .padding(20)
-            
-            if showHistory {
-                historyOverlay
+
+            ZStack {
+                Color.black.ignoresSafeArea()
+
+                VStack(spacing: 0) {
+                    displaySection
+
+                    Divider().background(Color.white.opacity(0.1))
+
+                    controlsHeader
+
+                    keypadSection
+                }
+                .padding(20)
             }
+            .frame(width: calculatorWidth)
+            .background(Color.black)
         }
-        .frame(width: 420, height: 750)
+        .frame(width: showSidebar ? calculatorWidth + sidebarWidth : calculatorWidth, height: 750)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showSidebar)
         .background(
             WindowAccessor { window in
                 hostWindow = window
@@ -136,27 +147,31 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .hexFloatOnTopToggle)) { _ in
             toggleAlwaysOnTop()
         }
-        .onChange(of: alwaysOnTop) { _, isOn in
+        .onChange(of: alwaysOnTop) { isOn in
             UserDefaults.standard.set(isOn, forKey: alwaysOnTopKey)
             applyWindowLevel()
         }
     }
 
     // MARK: - UI Components
-    
+
     private var displaySection: some View {
         VStack(alignment: .trailing, spacing: 8) {
             // Target Selection & Mode
             HStack {
-                Button(action: { showHistory.toggle() }) {
-                    Image(systemName: "clock.arrow.circlepath")
+                Button(action: {
+                    withAnimation {
+                        showSidebar.toggle()
+                    }
+                }) {
+                    Image(systemName: "sidebar.left")
                         .font(.title3)
-                        .foregroundColor(.orange)
+                        .foregroundColor(showSidebar ? .orange : .gray)
                 }
                 .buttonStyle(.plain)
-                
+
                 Spacer()
-                
+
                 Text("\(selectedBitWidth.rawValue)-BIT")
                     .font(.caption.bold().monospaced())
                     .padding(.horizontal, 8)
@@ -178,7 +193,7 @@ struct ContentView: View {
                     .lineLimit(1)
             }
             .onTapGesture { activeInput = .a }
-            
+
             // Input B
             VStack(alignment: .trailing, spacing: 2) {
                 Text("INPUT B")
@@ -192,9 +207,9 @@ struct ContentView: View {
                     .opacity(selectedOperation.isUnary ? 0.3 : 1.0)
             }
             .onTapGesture { if !selectedOperation.isUnary { activeInput = .b } }
-            
+
             Spacer(minLength: 10)
-            
+
             // Main Result
             VStack(alignment: .trailing, spacing: 4) {
                 Text(resultHex)
@@ -205,7 +220,7 @@ struct ContentView: View {
                     .contextMenu {
                         Button("Copy Hex") { copyToClipboard(resultHex) }
                     }
-                
+
                 Text(resultDecimal)
                     .font(.system(size: 20, weight: .regular, design: .monospaced))
                     .foregroundColor(.gray)
@@ -213,7 +228,7 @@ struct ContentView: View {
                     .contextMenu {
                         Button("Copy Decimal") { copyToClipboard(resultDecimal) }
                     }
-                
+
                 Text(status)
                     .font(.caption2)
                     .foregroundColor(status == "OK" || status == "Ready" ? .green : .orange)
@@ -229,7 +244,7 @@ struct ContentView: View {
         .padding(.vertical, 20)
         .contentShape(Rectangle())
     }
-    
+
     private var controlsHeader: some View {
         HStack(spacing: 16) {
             // Bit Width Section
@@ -247,15 +262,15 @@ struct ContentView: View {
                     }
                 }
             }
-            
+
             Spacer()
-            
+
             // Wrap Section
             HStack(spacing: 8) {
                 Text("WRAP")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundColor(.gray)
-                
+
                 Toggle("", isOn: $wrapOnOverflow)
                     .toggleStyle(.switch)
                     .controlSize(.small)
@@ -296,7 +311,7 @@ struct ContentView: View {
                 calcButton("CLR", color: .mediumGray, textColor: .black) { clear() }
                 calcButton(selectedOperation.symbol, color: .orange) { /* Current Op */ }
             }
-            
+
             // Hex Digits Row 2
             HStack(spacing: 12) {
                 calcButton("D", color: .darkGray) { appendKey("D") }
@@ -305,7 +320,7 @@ struct ContentView: View {
                 calcButton("7", color: .darkGray) { appendKey("7") }
                 calcButton("8", color: .darkGray) { appendKey("8") }
             }
-            
+
             // Row 3
             HStack(spacing: 12) {
                 calcButton("9", color: .darkGray) { appendKey("9") }
@@ -314,7 +329,7 @@ struct ContentView: View {
                 calcButton("6", color: .darkGray) { appendKey("6") }
                 calcButton("1", color: .darkGray) { appendKey("1") }
             }
-            
+
             // Row 4
             HStack(spacing: 12) {
                 calcButton("2", color: .darkGray) { appendKey("2") }
@@ -323,14 +338,14 @@ struct ContentView: View {
                 calcButton("0x", color: .mediumGray, textColor: .black) { addPrefix() }
                 calcButton("⌫", color: .mediumGray, textColor: .black) { backspace() }
             }
-            
+
             // Operations Grid
             VStack(alignment: .leading, spacing: 4) {
                 Text("OPERATIONS")
                     .font(.caption2.bold())
                     .foregroundColor(.gray)
                     .padding(.leading, 4)
-                
+
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(Operation.allCases) { op in
@@ -349,7 +364,7 @@ struct ContentView: View {
                     .padding(.vertical, 4)
                 }
             }
-            
+
             // Action Row
             HStack(spacing: 12) {
                 calcButton("SWAP A/B", color: .mediumGray, textColor: .black) {
@@ -374,67 +389,63 @@ struct ContentView: View {
         .frame(height: 50)
     }
 
-    private var historyOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.85).ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                HStack {
-                    Label("History", systemImage: "clock.fill")
-                        .font(.headline)
-                    Spacer()
-                    Button("Clear History") {
-                        history.removeAll()
-                        saveHistory()
-                    }
-                    .foregroundColor(.red)
-                    .font(.subheadline.bold())
-                    Button("Close") { showHistory = false }
-                        .foregroundColor(.orange)
-                        .font(.subheadline.bold())
+    private var historySidebar: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Label("History", systemImage: "clock.fill")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                Spacer()
+                Button(action: {
+                    history.removeAll()
+                    saveHistory()
+                }) {
+                    Image(systemName: "trash")
+                        .foregroundColor(.gray)
                 }
-                .padding()
-                
-                List {
-                    ForEach(history) { entry in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(entry.expression)
-                                .font(.system(.subheadline, design: .monospaced))
-                                .foregroundColor(.gray)
-                            
-                            HStack {
-                                Text(entry.resultHex)
-                                    .font(.system(.headline, design: .monospaced))
-                                    .foregroundColor(.orange)
-                                Spacer()
-                                Text(entry.resultDecimal)
-                                    .font(.system(.caption, design: .monospaced))
-                                    .foregroundColor(.gray)
-                            }
-                            
-                            Text("\(entry.bitWidth)-BIT • \(entry.timestamp.formatted(date: .abbreviated, time: .shortened))")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(.white.opacity(0.3))
-                        }
-                        .padding(.vertical, 8)
-                        .listRowBackground(Color.white.opacity(0.03))
-                        .onTapGesture {
-                            inputA = entry.resultHex
-                            showHistory = false
-                        }
-                    }
-                    .onDelete(perform: deleteHistory)
-                }
-                .scrollContentBackground(.hidden)
+                .buttonStyle(.plain)
             }
-            .background(Color(white: 0.08))
-            .cornerRadius(20)
-            .padding(40)
+            .padding()
+            .background(Color.white.opacity(0.05))
+
+            List {
+                ForEach(history) { entry in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(entry.expression)
+                            .font(.system(.subheadline, design: .monospaced))
+                            .foregroundColor(.gray)
+
+                        HStack {
+                            Text(entry.resultHex)
+                                .font(.system(.headline, design: .monospaced))
+                                .foregroundColor(.orange)
+                            Spacer()
+                            Text(entry.resultDecimal)
+                                .font(.system(.caption, design: .monospaced))
+                                .foregroundColor(.gray)
+                        }
+
+                        Text("\(entry.bitWidth)-BIT • \(entry.timestamp.formatted(date: .abbreviated, time: .shortened))")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.white.opacity(0.3))
+                    }
+                    .padding(.vertical, 8)
+                    .listRowBackground(Color.clear)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        inputA = entry.resultHex
+                    }
+                }
+                .onDelete(perform: deleteHistory)
+            }
+            .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
         }
+        .background(Color(white: 0.1))
     }
 
     // MARK: - Logic Helpers
-    
+
     private func appendKey(_ key: String) {
         if activeInput == .a {
             inputA += key
@@ -442,7 +453,7 @@ struct ContentView: View {
             inputB += key
         }
     }
-    
+
     private func backspace() {
         if activeInput == .a {
             if !inputA.isEmpty { inputA.removeLast() }
@@ -450,7 +461,7 @@ struct ContentView: View {
             if !inputB.isEmpty { inputB.removeLast() }
         }
     }
-    
+
     private func clear() {
         inputA = ""
         inputB = ""
@@ -458,7 +469,7 @@ struct ContentView: View {
         resultHex = formatHex(0, bits: selectedBitWidth.rawValue)
         resultDecimal = "0"
     }
-    
+
     private func addPrefix() {
         let current = activeInput == .a ? inputA : inputB
         let normalized = normalizeInputForEditing(current)
@@ -473,7 +484,7 @@ struct ContentView: View {
             setActiveInput(normalized)
         }
     }
-    
+
     private func handlePaste() {
         if let pasteboardString = NSPasteboard.general.string(forType: .string) {
             if let cleaned = extractHexCandidate(from: pasteboardString) {
@@ -619,7 +630,7 @@ struct ContentView: View {
     private func calculate() {
         let mask = selectedBitWidth.mask
         guard let parsedA = parseHex(inputA) else { status = "Invalid A"; return }
-        
+
         var parsedB: UInt64 = 0
         if !selectedOperation.isUnary {
             guard let tempB = parseHex(inputB) else { status = "Invalid B"; return }
@@ -628,7 +639,7 @@ struct ContentView: View {
 
         let a = wrapOnOverflow ? (parsedA & mask) : parsedA
         let b = wrapOnOverflow ? (parsedB & mask) : parsedB
-        
+
         if !wrapOnOverflow && (a > mask || b > mask) {
             status = "Overflow"
             return
