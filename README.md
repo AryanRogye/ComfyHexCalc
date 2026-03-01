@@ -1,6 +1,6 @@
 # Hex Calculator
 
-Bro, this is the hex calculator I wanted and couldn't find.
+this is the hex calculator I wanted and couldn't find.
 
 Most calculators act weird when you care about exact bit width, overflow behavior, and low-level sanity checks. This one is built for that.
 
@@ -27,12 +27,6 @@ Because regular calculators default to giant integer behavior and then you end u
 No thanks.
 
 This app keeps math constrained to the width you actually care about.
-
-## Download
-
-Available on the Mac App Store.
-
-If you're here from the store and wanted the source: welcome, you're in the right place.
 
 ## Build From Source
 
