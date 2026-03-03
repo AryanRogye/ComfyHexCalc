@@ -60,6 +60,4 @@ Good first contributions:
 
 ## License
 
-No license file has been added yet.
-
-If you want reuse permissions, open an issue and I'll add one.
+MIT. See [LICENSE](LICENSE).
