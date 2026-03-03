@@ -6,6 +6,11 @@ Most calculators act weird when you care about exact bit width, overflow behavio
 
 Hex Calculator is a macOS app for devs doing systems, embedded, reverse engineering, low-level debugging, or just anything where `0x` life is real.
 
+<img width="426" height="266" alt="ComfyHexCalc_3" src="https://github.com/user-attachments/assets/b0cf23de-090e-4315-9987-366889437bf4" />
+<img width="426" height="266" alt="ComfyHexCalc_2" src="https://github.com/user-attachments/assets/9a5e8205-e64f-42d3-8236-2ed814376e7f" />
+<img width="426" height="266" alt="ComfyHexCalc_1" src="https://github.com/user-attachments/assets/f4b23351-d4b6-44a3-999d-2fc6b1fbc3b3" />
+
+
 ## What It Does
 
 - Fixed bit widths: `8`, `16`, `32`, `64`
